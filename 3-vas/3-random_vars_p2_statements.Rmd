@@ -27,6 +27,8 @@ f = function(t) {
   exp(-t / 4.5) 
 }
 
+# integral c* f = 1==> c = 1 / integral
+
 integral_result = integrate(f, 0, Inf)
 print(integral_result$value)
 ```
@@ -39,19 +41,43 @@ ninguna llamada en los próximos 5 minutos?
 ```
 
 
-Calcula la función de distribución de la VA T y dibújala. Usa la función de distribución para
+Calcula la función de distribución de la VA T y dibújala.
+Usa la función de distribución para
 calcular la probabilidad de que el tiempo entre dos llamados sea entre 2 y 3
 minutos.
 
 ```{r}
-# ??
+# F(t) = P(T <= t) = integrate from -infty to t 
+
+# función de densidad
+f = function(t) {
+  exp(-t / 4.5) / 4.5
+}
+
+# Funcion de distribucion/funcion de densidad acumulada
+FF = function(t) {
+  integrate(f, 0, t)$value
+}
+
+print(FF(3) - FF(2))
+
+# dibujar la función de distribución (vectorizar FF).
 ```
 
 
 Calcula la media, moda y varianza de T.
 
 ```{r}
-# ??
+# E[T] = sum t * p(t) ===> integral t * f(t) 
+mu = integrate(function(t) t * f(t), 0, Inf)
+print(mu)
+
+# Var[T] = E[(T - mu)^2] = E[T^2] - mu ^ 2
+# E[T^2] = integrate t ^ 2 * f(t)
+E_T2 = integrate(function(t) t^2 * f(t), 0, Inf)
+
+varianza = E_T2$value - mu$value ^ 2
+print(varianza)
 ```
 
 ---
@@ -91,18 +117,49 @@ Visualiza la función de densidad.
 # lattice::levelplot(z, row.values = x, column.values = y, cuts = 50, colorkey=FALSE)
 # lattice::contourplot(z, row.values = x, column.values = y, region = TRUE, colorkey=FALSE)
 ```
+
 ```{r}
 x <- seq(-3, 3, 0.2)
 y <- seq(-3, 3, 0.1)
 z <- outer(x, y, function(x, y) exp(-x^2) * exp(-2*y^2))
-contour(z, x = x, y = y)
+contour(z, x = x, y = y) # contour
 ```
 
 
 Calcula (a) $P(X > 1, Y < 1)$; (b) $P(X < Y)$
 
 ```{r}
-# ??
+source("../utils.R")
+
+fu = function(x, y) {
+  exp(-x ^ 2 - 2 * y ^ 2) 
+}
+# integral c * fu = 1 ---> c = 1 / integral fu
+
+almost_cte = integrate2_dydx(
+  fu,
+  from_x=-Inf, to_x=Inf,
+  from_y=function(x) -Inf, to_y=function(x) Inf
+)
+
+cte = 1 / almost_cte$value
+
+f = function(x, y) cte * fu(x,y)
+
+
+# a) P(X > 1, Y < 1)
+integrate2_dydx(
+  f, 
+  from_x = 1, to_x = Inf, 
+  from_y = function(x) -Inf, to_y = function(x) 1
+)
+
+# b) P(X < Y)
+integrate2_dydx(
+  f, 
+  from_x = -Inf, to_x = Inf, 
+  from_y = function(x) x, to_y = function(x) Inf
+)
 ```
 
 ----
@@ -113,7 +170,20 @@ para cada persona es uniforme entre las 12:00 y las 12:30. ¿Probabilidad de que
 encuentren?
 
 ```{r}
-# ??
+f = function(x, y) {
+  ifelse(
+    (x > 0) & (x < 30) & (y > 0) & (y < 30),
+    1 / 900, 
+    0
+  )
+}
+
+integrate2_dydx(
+  f, 
+  from_x=0, to_x=30, 
+  from_y = function(x) x - 5,
+  to_y = function(x) x + 5
+)
 ```
 
 ---- 
