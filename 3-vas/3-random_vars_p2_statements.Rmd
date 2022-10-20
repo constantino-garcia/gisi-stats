@@ -200,7 +200,19 @@ X e Y se distribuyen conjuntamente con la función de densidad:
 Calcula la probabilidad de que B dure al menos tres unidades de tiempo más que A.
 
 ```{r}
-# ??
+f = function(x, y) {
+  ifelse(
+    (x > 0) & (y > x),
+    exp(-y),
+    0
+  )
+}
+
+integrate2_dydx(
+  f, 
+  from_x = 0, to_x = Inf,
+  from_y = function(x) 3 + x, to_y = function(x) Inf
+)
 ```
 
 Calcula la probabilidad de A y B duren ambos más de 2 unidades de tiempo.
@@ -211,8 +223,21 @@ Calcula la probabilidad de A y B duren ambos más de 2 unidades de tiempo.
 
 Calcula las funciones de densidad marginales.
 
+
+
 ```{r}
-# ??
+f_x = function(xv) {
+  # Otra opcion: resolver con WA-> exp(-xv - 3)
+  # f(x, y)
+  integrate(f, xv, Inf, x=xv)$value
+}
+f_x = Vectorize(f_x)
+
+xs = seq(0, 10, by = 0.01)
+plot(xs, f_x(xs), type = "l")
+
+
+# f_y?
 ```
 
 Calcula la función de densidad condicional para X si sabemos que B ha durado
@@ -222,18 +247,34 @@ Calcula la función de densidad condicional para X si sabemos que B ha durado
 # ??
 ```
 
-Calcula la función de densidad condicional para Y si sabemos que A ha durado
-5 unidades de tiempo. ¿Cuál es la probabilidad de que B dure entre entre 4
+Calcula la función de densidad condicional para Y 
+si sabemos que A ha durado 5 unidades de tiempo. ¿Cuál
+es la probabilidad de que B dure entre entre 4
 y 7 unidades de tiempo si A ha durado 5 unidades de tiempo?
 
+$$P(4 < Y < 7 | X=5) = \int_4^7 f(y|x=5) dy$$
+
 ```{r}
-# ??
+f_y_given_x5 = function(y) {
+  f(5, y) / f_x(5)
+}
+
+ys = seq(0, 10, by = 0.1)
+# y > 5 para que la f no sea nula
+plot(ys, f_y_given_x5(ys), type = "l") 
+
+integrate(f_y_given_x5, 4, 7)
 ```
 
 ¿Cuál es el valor esperado para Y si X=5?
 
+$$E[Y | X=5] = \int y f(y|x=5) dy$$
 ```{r}
-# ??
+integrate(
+  function(y) y * f_y_given_x5(y),
+  5, 
+  Inf
+)
 ```
 
 ----
