@@ -1,4 +1,4 @@
----
+  ---
 title: "Variables aleatorias III"
 output: html_document
 editor_options: 
@@ -67,7 +67,34 @@ blancas y tantas bolas negras como cruces hayan salido en una urna. Se extraen
 bolas blancas y cuál es su probabilidad?
 
 ```{r}
-# ??
+# X: nº de cruces hasta obtener 10 caras
+# Y: nº de bolas blancas obtenidas en la extracción de 5 bolas
+
+# X ~ NegBinom(10, 0.5)
+# Y|X=x ~ HypGeom(10, x, 5)
+
+# P(Y=y)  para todo valor de y ---> moda
+# 1) Calcular la conjunta P(X, Y)
+# 2) Marginalizar X para hallar P(Y)
+
+# 1) Calcular la distro conjunta P(X, Y)
+# P(X, Y) = P(X) * P(Y|X)
+p_xy = function(x, y) { 
+  dnbinom(x, 10, 0.5) * dhyper(y, 10, x, 5)
+}
+
+xs = 0:100
+ys = 0:5
+probs_xy = outer(xs, ys, p_xy)
+colnames(probs_xy) = paste("P(Y=", ys, ")")
+
+# 2) P(Y=y) = sum_x P(X=x, Y=y)
+probs_y = colSums(probs_xy)
+sum(probs_y)
+
+plot(ys, probs_y, type="h")
+
+#----> Moda: 3; P(Y=3) = 0.32458914 
 ```
 
 ----
@@ -109,7 +136,16 @@ típica 5 cm. ¿Cuál es la probabilidad de que el disparo acabe a menos de 1 cm
 del corazón? Resuelve por simulaciones.
 
 ```{r}
-# ??
+# P(D < 1)
+# D = sqrt(X^2 + Y^2)
+# X ~ N(0, sd = 5)
+# Y ~ N(0, sd = 5)
+# Asumimos independencia entre variables aleatorias
+N = 5000
+x = rnorm(N, 0, sd = 5)
+y = rnorm(N, 0, sd = 5)
+d = sqrt(x ^ 2 + y ^ 2)
+sum(d < 1) / N
 ```
 
 ----
@@ -122,14 +158,50 @@ los gustos de cada usuario. Asumimos que las películas que ve un usuario
 $X\sim \mathbb{U}[0, 1]$ y $Y~\sim\mathbb{U}[0, 1]$ (independientes). Si un 
 usuario tiene  como rasgos $X=x$ e $Y=y$:
 
-
 * La probabilidad de ver una película de acción es $p_a = \frac{2 x - y + 1}{6}$. 
 * La probabilidad de ver una película romántica es $p_r = \frac{3y - 2x + 2}{10}$
 * La probabilidad de ver una película de acción-amor es $p_{ar} = 1 - p_a - p_r$. 
 
 De las últimas 20 películas que ha visto un usuario, 4 han sido de acción,
 4 románticas y 12 de acción-amor. ¿Cuáles son sus rasgos X e Y más probables?
-
 ```{r}
-# ??
+# X ~ U(0, 1)
+# Y ~ U(0, 1)
+# (A, R, M) | X=x, Y=y ~ Multinom(20, p_a, p_r, p_m)
+
+# Moda de X e Y sabiendo que A=4, R=4, M=12
+# Gráfica f(x, y | A=4, R=4, M=12)
+# Resolver el problema:
+# 1) Calcular f(x, y, a, r, m)
+# 2) Marginalizar f(a, r, m)
+# 3) f(x, y| a, r, m) = f(x, y, a, r, m) / f(a, r, m)
+
+# 1) Calcular la distribución conjunta
+f = function(x, y, a, r, m) {
+  # f(a, r, m | x, y) = f(x, y, a, r, m) / f(x, y)
+  # f(x, y, a, r, m) = f(a, r, m | x, y) * f(x, y)
+  # f(x, y) = f(x) * f(y)
+  p_a = (2 * x - y + 1) / 6
+  p_r = (3 * y - 2 * x + 2) / 10
+  p_m = 1 - p_a - p_r
+  prob = c(p_a, p_r, p_m)
+  dmultinom(c(a, r, m), 20, prob) * dunif(x) * dunif(y)
+}
+
+# 2) Marginalizar f(a, r, m)
+f_pelis = function(a, r, m) {
+  # integrate f en x
+  # integrate f en y
+}
+
+# 3) 
+f_xy_given_pelis = function(x, y) {
+  #f(x, y| a, r, m) = f(x, y, a, r, m) / f(a, r, m)
+  f(x, y, 4, 4, 12) / f_pelis(4, 4, 12)
+}
+
+# 4) Dibujar con contour
+
+
 ```
+
