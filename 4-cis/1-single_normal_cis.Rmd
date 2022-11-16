@@ -1,6 +1,8 @@
 ---
 title: "4-Intervalos de confianza para una población Normal"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -21,12 +23,38 @@ se diseñan para que la desviación estándar poblacional sea de 15 puntos.
 (Paso 1) Calcula la media muestral para el problema de los CIs.
 
 ```{r paso_1}
-# ??
+library(readr)
+iq_df <- read_csv("data_1/iq.csv")
+
+# mean
+mean(iq_df$iq) # cociente intelectual medio para la muestra es 99
 ```
 
 (Paso 2) ¿Cuál es la distribución de $\bar{X}$? 
 
 **Responde aquí**
+```{r}
+# ¿En este ejercicio, es razonable asumir Normalidad?
+iq <- iq_df$iq
+# hist(iq) # Es razonable asumir normalidad.
+library("tidyverse")   
+# ggplot2, install.packages("ggplot2")
+
+# mapeo de columnas a "atributos estéticos" (aesthetics)
+ggplot(iq_df, aes(x = iq, 
+                  y=grade_point_average, 
+                  col=gender)
+) + 
+  geom_point()   # + geom_line()
+
+ggplot(iq_df, aes(x=iq)) +
+  geom_histogram()
+# Sí es razonable asumir normalidad.
+
+# ¿En este ejercicio, es razonable MAS/pob infinita?
+
+```
+
 
 (Paso 3a) Escribe matemáticamente la regla del 68-95-99 para nuestro estadístico $\bar{X}$.
 
@@ -108,20 +136,37 @@ al 99\% para $\sigma^2$.
 
 Nueva York es conocida como ``la ciudad que nunca duerme''. En cierta encuesta 
 se preguntó a una muestra aleatoria de 25 neoyorquinos cuánto tiempo dormían por 
-la noche. Los datos se encuentra en "new\_york.csv". ¿Apoyan los datos la afirmación 
-de que los neoyorquinos duermen menos de 8 horas por noche en promedio? Usa un 
-nivel de confianza del 96\%.
+la noche. Los datos se encuentra en "new\_york.csv". ¿Apoyan los datos la
+afirmación  de que los neoyorquinos duermen menos de 8 horas por noche en
+promedio? Usa un nivel de confianza del 96\%.
 
 ```{r}
+# Si las muestras eran indepes -> población infinita
+# Si la población era normal
+library(readr)
+library("tidyverse")
 
-# ??
+new_york <- read_csv("data_1/new_york.csv")
+
+# El número de bins es muy importante
+# ¿Cómo elegir el número de bins?
+bins = nclass.FD(new_york$sleep_hours)
+ggplot(new_york, aes(x = sleep_hours)) + 
+  geom_histogram(bins = bins)
+
+# IC: (7.39582, 8.06418) # T-Student
 ```
 
 
 Resuelve el mismo ejercicio empleando la función \textit{t.test}.
 
 ```{r}
-
-# ??
+# Siempre hay que discutir las asunciones bajo
+# las que t.test es válido:
+# * Normalidad de los datos (histogramas)
+# * Muestreo es con reemplazamiento/pobl. infinita
+my_t_test = t.test(new_york$sleep_hours, 
+                   conf.level = 0.96)
+my_t_test$conf.int
 ```
 
