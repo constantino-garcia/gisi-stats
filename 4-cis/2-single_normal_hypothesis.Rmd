@@ -234,7 +234,34 @@ de que el fármaco te hace perder peso? (Usa $\alpha=0.05$.)
 $$H_0: \mu < 0$$
 $$H_1: \mu > 0$$
 ```{r}
-# ??
+library(readr)
+pharma_weight_loss <- read_csv("data_2/pharma_weight_loss.csv")
+
+# 2. Encontrar un estadístico...
+# Se deben cumplir dos condiciones para usar t.test:
+# 1) Población infinita--> independencia entre muestras.
+#    La población es personas que pueden llegar a usar un producto de pérdida de peso. La muestra es pequeña con respecto
+# a esta población.
+
+# 2) Distribución normal. Es razonable en vista al histograma
+library("tidyverse")
+nbins = nclass.FD(pharma_weight_loss$weight_loss_Kg)
+ggplot(pharma_weight_loss, aes(x = weight_loss_Kg)) + 
+  geom_histogram(bins = nbins)
+
+# Ha: mu > 0
+my_ttest = t.test(
+  pharma_weight_loss$weight_loss_Kg, 
+  alternative = "greater", 
+  mu = 0
+)
+# p-value = 0.0003103 
+# p_valor < alpha = 0.05
+# ---> Aceptar la Ha
+# ---> Los datos apoyan que hay una pérdida de peso. En media,
+# se pierden 100 g. 
+
+
 ```
 ¿Tú crees que alguien comprará el producto?
 **No hay que confundir la significancia estadística con la relevancia práctica**.
@@ -245,18 +272,42 @@ Calcula el tamaño del efecto para el problema del fármaco. ¿Cómo lo interpre
 Usa la siguiente [tabla]{https://imaging.mrc-cbu.cam.ac.uk/statswiki/FAQ/effectSize}.
 
 ```{r}
-# ??
+# Para calcular la relevancia del resultado:
+weights = pharma_weight_loss$weight_loss_Kg
+# Números pequeños son poco relevantes...
+cohens_d = mean(weights) / sd(weights) 
+
+library("effectsize") # install.packages("effectsize")
+effectsize(my_ttest)
+
+# Como 0.11 < 0.2 --> Tamaño del efecto pequeño
+# (resultado poco relevante)
+
+
 ```
 
 Siempre que hagas un test de medias, 
 **usa el tamaño del efecto o ICs para complementar los p-valores**.
 
+
 ### ICs unilaterales
 Calcula el **IC unilateral** asociado al test.
 
 ```{r}
-# ??
+print(my_ttest$conf.int)
+# Estamos 95% seguros, que la pérdida de peso media
+# es superior a 0.055
 ```
+
+Cómo reportar resultados?
+
+Los datos apoyan que hay una pérdida de peso gracias
+al uso del producto (p-valor=0.0003). Sin embargo, 
+el tamaño del efecto es pequeño (0.11), lo que nos
+indica que la pérdida de peso es poco relevante 
+(Con 95% de confianza, la pérdida > 0.05 Kg). 
+
+
 
 ### Test para la varianza
 Los test de cociente intelectual (CI) están diseñados para que la desviación típica
