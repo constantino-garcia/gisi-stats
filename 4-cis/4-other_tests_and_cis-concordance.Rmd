@@ -1,0 +1,51 @@
+---
+title: "Intervalos de confianza y test de hipótesis para dos poblaciones normales"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Datos no-normales
+### Fútbol y Poisson
+Bajo ciertas condiciones, el número de goles marcados en un partido de fútbol 
+se puede aproximar por una distribución de Poisson. El fichero "spain_league.csv"
+contiene datos sobre la liga de fútbol española. Para hacer tus apuestas deportivas,
+es importante saber el número de goles promedio por equipo en cada partido. Usando
+los resultados de la liga 21-22, construye un intervalo de confianza
+del 98\% para el promedio de goles del equipo local en un partido.
+
+```{r}
+# ??
+```
+
+
+# Datos tabulares
+## Racismo en la selección de jurados
+Durante los 60s-70s, se dieron casos de racismo en la elección de jurados
+populares. Supuestamente, la elección es al azar entre un listado de todos los
+ciudadanos. Sin embargo, se daban situaciones como que en una preselección de 80
+posibles jurados solo 4 fuesen afroamericanos (de una población con un 50\% de
+afroamericanos). Datos en "juries.csv". Las autoridades se defendían diciendo
+que era pura casualidad. ¿Es esto creíble? Apoya tus conclusiones con gráficos.
+
+```{r}
+# ??
+```
+
+
+### A/B testing
+Una página web de venta de productos ha estudiado el número de conversiones de
+su página web actual (conversión $=$ el usuario hace click en ``comprar ahora'').
+Para aumentar el número de conversiones, rediseña el aspecto de su página web en
+base a *heatmaps*.  La nueva página se prueba con un nuevo conjunto de usuarios,
+midiendo el número de conversiones. Datos en "ab_testing.csv". ¿Se puede 
+concluir que la nueva página incrementa el número de conversiones? 
+Apoya tus conclusiones con un gráfico.
+
+```{r}
+# ??
+```
+

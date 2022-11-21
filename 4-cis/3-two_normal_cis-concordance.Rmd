@@ -1,0 +1,82 @@
+---
+title: "Intervalos de confianza y test de hipótesis para dos poblaciones normales"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Comparaciones de medias en poblaciones normales
+## Varianzas totalmente desconocidas
+
+### Diferencias por sexos
+Los datos contenidos en "howell1.csv" son datos censales parciales del
+área !Kung San compilados a partir de entrevistas realizadas a finales de la década
+de 1960. ¿Depende la altura de los !Kung adultos del sexo del inviduo? ($\alpha=0.01$). 
+
+Apoya tus resultados con un gráfico y calcula el tamaño del efecto. Emplea 
+los datos en "howell1.csv".
+
+```{r}
+# ??
+```
+
+
+## Varianzas desconocidas pero iguales
+### Varianzas desconocidas pero iguales
+Repite el ejercicio relativo a los !Kung adultos si se puede asumir que 
+la desviación típica poblacional para hombres y mujeres es la misma 
+($\sigma_h = \sigma_m$).
+
+```{r}
+# ??
+```
+
+
+## Datos apareados
+### Datos apareados
+Unos científicos examinaron la función de la vesícula biliar antes y 
+después de una cirugía  para detener el reflujo. Los autores midieron 
+la funcionalidad de la vesícula biliar calculando la fracción de eyección de
+la vesícula biliar (GBEF) antes y después de la operación. El objetivo de la 
+operación es aumentar la GBEF. ¿Hay evidencia para concluir que la operación 
+aumenta el GBEF? Datos en "gbef\_long.txt" (o "gbef.txt", para un reto).
+
+```{r}
+# ??
+```
+
+# Comparaciones de varianzas
+
+### Comparaciones de varianzas
+En una empresa, se están comparando dos métodos de producción de cierto chip 
+(A, mucho más barato, y B). La potencia media consumida por ambos chips es 
+idéntica, si bien los dos métodos tienen distinta variabilidad. Se obtienen 
+dos muestras de tamaño 16 y 10 y sus varianzas muestrales son
+$24$ y $18$ (en Watts$^2$). Usando un nivel de confianza del 98\%, ¿qué método 
+es preferible? Usa la función *var.test*.
+
+```{r}
+# ??
+```
+
+--- 
+
+Resuelve el mismo ejercicio empleando haciendo los cálculos del IC y del 
+p-valor "a mano".
+
+```{r}
+# ??
+```
+
+
+### !Kung y varianzas
+Usa un test de ratio de varianzas para discutir si es razonable asumir 
+igualdad de varianzas en el ejercicio de los !Kung (¿Existe evidencia de que 
+las varianzas por sexo son distintas?)
+
+```{r}
+# ??
+```
+
