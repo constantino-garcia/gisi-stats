@@ -18,9 +18,76 @@ de 1960. ¿Depende la altura de los !Kung adultos del sexo del inviduo? ($\alpha
 Apoya tus resultados con un gráfico y calcula el tamaño del efecto. Emplea 
 los datos en "howell1.csv".
 
+X: altura de un hombre adulto 
+Y: altura de una mujer adulta
+
+X ~ N(mu_x, sigma_x)
+Y ~ N(mu_y, sigma_y)
+
+¿Depende la altura del sexo?
+H0: mu_x = mu_y    => mu_x - mu_y = 0
+Ha: mu_x != mu_y   => mu_x - mu_y != 0
+
+¿Qué estadístico para la media si no conocemos varianzas 
+poblaciones? --> T-Student (t.test). Condiciones:
+* Distribución normal, para X e Y (por separado)
+* Independencia de las muestras para X, e independencia 
+de las muestras para Y.
+* Indepencia entre X e Y.
+
+
 ```{r}
-# ??
+library("tidyverse")
+library("effectsize") # necesarias para medias
+library("readr")
+
+howell <- read_delim("data_3/howell1.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+howell_adults = howell[howell$age >= 18, ]
+# Los datos categóricos se deben codificar como factores
+howell_adults$male = as.factor(howell_adults$male)
+howell_adults
+
+nbins <- nclass.FD(howell_adults$height)
+
+ggplot(howell_adults, aes(x=height, col=male)) + 
+  # geom_histogram(bins = nbins)
+  geom_density()
+
+# Dos asunciones restantes:
+# * Para cada subplobación: muestro con reemplazamiento o población infinita? sobre 350 personas, como es más pequeña que la población 
+# objetivo, podemos asumir independencia.
+
+# * Si es razonable asumir independencia entre X e Y. Es razonable 
+# asumir que la altura de los hombres no afecta a la de las mujeres.
+
+men = howell_adults[howell_adults$male == 1, ]
+women = howell_adults[howell_adults$male == 0, ]
+# Ha: mu_men - mu_women != 0
+mytest = t.test(men$height, women$height,
+                alternative = "two.sided", mu = 0)
+
+# p-valor = 0 (Aceptamos alternativa)
+
+
+effectsize(mytest) # cohens-d 1.95
 ```
+
+Los datos apoyan que la altura de los hombres es 
+distinta que la altura de las mujeres. La altura 
+de los hombres está entre 9.5 y 12 cm más que la 
+altura de las mujeres. El tamaño del efecto es muy 
+grande (cohens-D: 1.95).
+
+Un-pooled SD (desviación típica no agrupada):
+* coger los datos X -> sd(X), uso n_x datos para la estimación
+* coger los datos Y -> sd(Y), uso n_y datos para la estimación
+
+Pooled SD (desviación típica agrupada)
+Si estoy seguro $$\sigma_x = \sigma_y$$:
+* combinar los datos de X e Y, para estimar $\sigma_x$ 
+(n_x + n_y)
 
 
 ## Varianzas desconocidas pero iguales
@@ -29,9 +96,25 @@ Repite el ejercicio relativo a los !Kung adultos si se puede asumir que
 la desviación típica poblacional para hombres y mujeres es la misma 
 ($\sigma_h = \sigma_m$).
 
+
 ```{r}
-# ??
+# Ha: mu_men - mu_mujeres != 0
+my_test = t.test(men$height, women$height,
+                 alternative = "two.sided",
+                 mu = 0, var.equal = TRUE)
+print(my_test)
+
+effectsize(my_test)
 ```
+
+
+¿Hay evidencia de que los hombres miden al menos 10 cm más que
+las mujeres?
+
+```{r}
+
+```
+
 
 
 ## Datos apareados
@@ -44,8 +127,95 @@ operación es aumentar la GBEF. ¿Hay evidencia para concluir que la operación
 aumenta el GBEF? Datos en "gbef\_long.txt" (o "gbef.txt", para un reto).
 
 ```{r}
-# ??
+library("tidyverse")
+library("effectsize")
+library("readr")
+
+gbef_long <- read_table("data_3/gbef_long.csv")
+colnames(gbef_long) <- c("ID", "class", "gbef")
+
+# 3 asunciones:
+# 1) Independientes entre las dos poblaciones -> No se cumple
+# porque el resultado preoperatorio, influye en el postoperatorio. (Suele suceder si repetimos medidas)
+
+# ====> DATOS APAREADOS
+gbef_long_preop <- gbef_long[gbef_long$class == "\"Preop\"", ]
+gbef_long_postop <- gbef_long[gbef_long$class == "\"Postop\"", ]
+
+gbef_long_postop
+
+diff_despues_antes <- (
+  gbef_long_postop$gbef - gbef_long_preop$gbef
+)
+
+hist(diff_despues_antes)
+
+
+# 1) Formular de hipótesis
+# Ho: mu_postop <= mu_preop
+# Ha: mu_postop > mu_preop ---> 
+#     mu_postop - mu_preop > 0 --->
+#     mu_diff > 0
+
+# 2) Discutir las asunciones.
+# (Si datos apareados, no discutimos independecia de poblaciones).
+
+# 2.1) Muestras independientes/población infinita. La muestra
+# en el estudio es pequeña comparada con los potenciales pacientes. Podemos asumir independencia de las muestras.
+# 2.2) Normalidad (datos apareados, sobre las diferencias)
+diff_despues_antes <- (
+  gbef_long_postop$gbef - gbef_long_preop$gbef
+)
+
+hist(diff_despues_antes)
+
+# 3) Aplico t.test
+
+# Ha: mu_diff > 0
+t.test(diff_despues_antes, alternative = "greater", 
+       mu = 0)
+
+# Ha: mu_postop - mu_preop > 0 
+my_test <- t.test(
+  gbef_long_postop$gbef, gbef_long_preop$gbef, 
+  alternative = "greater", mu = 0,
+  paired = TRUE,
+  conf.level = 0.99
+)
+
+effectsize(my_test)
+
 ```
+
+Los datos no aportan suficiente evidencia de que la 
+operación aumenta el GBEF (nivel de significación: 0.01, p-valor: 0.04086). Si bien,
+el tamaño del efecto es medio (incremento medio: 18.075).
+
+Sugeriríamos repetir con más muestras. ¿Con cuántas
+muestras si queremos $\alpha=0.01$ y potencia del 0.9?
+?
+
+```{r}
+power.t.test(
+  delta = 18.075,
+  sd = sd(diff_despues_antes),
+  sig.level = 0.01,
+  power = 0.9,
+  type = "one.sample",
+  alternative = "one.sided"
+)
+
+```
+
+Repetir con 46 pacientes.
+
+
+
+
+
+
+
+
 
 # Comparaciones de varianzas
 
@@ -58,7 +228,34 @@ $24$ y $18$ (en Watts$^2$). Usando un nivel de confianza del 98\%, ¿qué métod
 es preferible? Usa la función *var.test*.
 
 ```{r}
-# ??
+# A: Potencia de los chips A  ~ N(mu, sigma_a)
+# B: Potencia de los chips B  ~ N(mu, sigma_b)
+
+# 1) formular hipótesis? No hay hipótesis, vamos a usar un 
+# IC.
+
+# 2) 
+# 2.1) Normalidad -> Asumo normalidad.  
+# 2.2) Independencia entre poblaciones: método de fabricación 
+# de A, no influye en el método de fabricación B.
+# 2.3) Independencia entre muestras. Asumimos que 16 y 10 chips
+# son pocos comparados con la producción diaria de la empresa.
+
+# 3) var.test: datos de A, datos de B
+# 3.1) Vamos a generar datos cuya media y varianza
+# muestral cuadren con los datos del enunciado.
+
+# reto: generar 16 muestras normales de media 3
+# y varianza 24.
+sim <- rnorm(16, mean = 3, sd = sqrt(24))
+sim_z <- (sim - mean(sim)) / sd(sim)
+sim_majas <- sim_z * sqrt(24) + 3 # proceso inv z
+
+
+# A: 16 muestras de var 24
+# B: 10 muestras de var 18
+# Para calcular var(a) / var(b)
+var.test(a, b)
 ```
 
 --- 

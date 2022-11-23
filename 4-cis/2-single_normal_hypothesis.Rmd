@@ -332,16 +332,29 @@ Como $\hat{s}^2=388.6902$, escribe una función que calcule la probabilidad de
 rechazar $H_0$ si $\sigma^2=388.6902$ para un número de muestras $n$. Completa
 el siguiente código:
 
+
+$$H_0: \sigma^2 = 15^2$$
+$$H_a: \sigma^2 \neq 15^2$$
+
+Potencia test: $$P(aceptar Ha | \sigma^2 \neq 15^2)$$
+Con simulaciones:
+1) Simular $$\sigma^2 \neq 15^2$$. Elijo la mejor explicación acerca
+de $\sigma^2$=388.6902.
+2) Calculo la probabilidad de rechazar la Ha.
+
 ```{r}
 power_var_test <- function(n, H0_sigma2 = 15 ^ 2, true_sigma2 = 388.6902,
                            significance = 0.05, N = 5000) {
   sims <- replicate(N, {
-    data <- rnorm(n, sd = sqrt(true_sigma2))
-    var_stat <- 0 # ????????????????????????????????
-    p_value <- 0  # ????????????????????????????????
-    p_value < significance
+    data <- rnorm(n, sd = sqrt(true_sigma2)) # datos donde Ha es cierta
+    var_stat <- (n - 1) * var(data) / (15 ^ 2)
+    p_value <- 2 * (1 - pchisq(var_stat, df = n - 1))
+    p_value < significance  # TRUE si rechazo la H0 (acepto Ha)
   })
+  mean(sims)  # P(aceptar Ha | Ha es cierta (sigma2 = 388.6902))
 }
+
+
 ```
 
 ### Potencia de un test: tamaño de la muestra
@@ -349,8 +362,18 @@ Halla ahora el número de muestras necesarias para obtener una potencia de test
 del 90\%.
 
 ```{r}
-# ??
+power_var_test = Vectorize(power_var_test)
+ns = seq(10, 80, by = 10)
+power_values = power_var_test(ns)
 ```
+```{r}
+plot(ns, power_values, type = "o")
+abline(h = 0.9, col = 2, lty = 2)
+# x_axis=seq(10, 80, by=0.01)
+# lines(x_axis, sin(x_axis))
+```
+
+Habría que repetir el estudio con unas 70 muestras.
 
 ### Potencia del T-test: número de muestras
 Según la estadísticas oficiales, la media de peso de las mujeres de cierto país
@@ -360,6 +383,16 @@ incrementado. ¿Cuántas muestras necesitarán para poder detectar un incremento
 medio Kg con un nivel de significación del 1\% y una potencia del 90\%? Usa 
 *power.t.test*.
 
+$$Ha: \mu > 63.5$$
+
 ```{r}
-# ??
+power.t.test(
+  delta = 0.5,
+  sd = 4.1, 
+  sig.level = 0.01,
+  power = 0.9, 
+  type = "one.sample",
+  alternative = "one.sided"
+)
+# Nuestro estudio debería correrse con 878 muestras
 ```
