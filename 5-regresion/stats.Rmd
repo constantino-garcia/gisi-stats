@@ -80,19 +80,34 @@ La primera pregunta a la que nos enfrentamos es la siguiente.
 
 ### Ejemplo: linear model (lm)
 ```{r}
-# 1) crear un modelo lineal
-naive_model = lm(data_y ~ data_x, data = df)
-# 2) obtener estimaciones de a y b
-summary(naive_model)
-# 3) Obtener predicciones del modelo lineal
-preds = predict(naive_model, interval = "confidence")
-# 4) visualizar el ajuste
-data_and_preds = bind_cols(df, preds)
-ggplot(data_and_preds, aes(x = data_x)) + 
-  geom_point(aes(y = data_y)) + 
-  geom_line(aes(y = expected, col = "Expected")) + 
-  geom_line(aes(y = fit, col = "Predicted")) + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, fill = "black")
+ggplot(df, aes(x = data_x, y = data_y)) + 
+  geom_point()
+
+# 1) Linear Model (lm)
+# data_y depende de data_x?
+# y = ??? + ?? * x
+my_lm = lm(data_y ~ data_x, df)
+
+# 2) Información estadística del modelo
+summary(my_lm)
+
+# 3) 
+# Vamos a predicir cuánto vale y, si x = 3, 5
+# y = 2.1199 + 3.0469 * x
+my_new_df =  data.frame('data_x' = c(3, 5))
+predict(my_lm, my_new_df, interval = "confidence")
+# predicciones sobre df
+my_predictions = predict(my_lm, interval = "confidence")
+my_predictions
+# 4) Representar la recta
+df = bind_cols(df, my_predictions)
+
+ggplot(df, aes(x = data_x, y = data_y)) + 
+  geom_point() + 
+  geom_line(aes(y = expected), col = 2) + 
+  geom_line(aes(y = fit), col = 3)
+  
+
 ```
 
 Dado que las estimaciones incorporan el error de estimación, es posible realizar
@@ -107,12 +122,27 @@ Para ello, manipula la temperatura en incrementos de 2ºC que van desde
 intervalo. Los datos están disponibles en "hr.csv".
 
 ```{r}
+# hr ~ temperatura
+# Universo 1: la temperatura no influye en HR
+#     HR = a + b * temperatura ----> b = 0
+
+# Es b = 0? o es b!=0? ----> H0: b = 0;  Ha: b != 0
+
+# Universo 2: la temperatura disminuye el HR
+#     HR= a + b * temperatura ----> b < 0
+# Universo 3: la temperatura aumenta el HR
+#     HR = a + b * temperatura ----> b > 0
+
 # 1) leer los datos
-# ??
+library("readr")
+hr <- read_table("data/hr.csv")
 # 2) Crear un modelo lineal
-# frog_model = ???
+frog_model = lm(heart_rate ~ temperature, hr)
 # 3) Inferencia
-# ??
+summary(frog_model)
+
+# Hay evidencia fuerte de que la temperatura influye de alguna
+# forma en el ritmo cardíaco.
 ```
 
 ---
@@ -159,13 +189,16 @@ size while also ensuring that you do not make a false claim either of no effect
 if p > 0.05, or an overly confident claim. (Lewis G. Halsey, [The reign of p-value is over](https://royalsocietypublishing.org/doi/10.1098/rsbl.2019.0174))
 
 ### Ejemplo: intervalos de confianza en lm
+
 ```{r}
-# # summary(frog_model)
-# confint(frog_model)
+summary(frog_model)
+confint(frog_model)
 ```
-Los resultados sugieren que el ritmo_cardiaco de las ranas se incrementará
-1.77 bpms por cada grado Celsius, si bien un aumento de la frecuencia 
-cardiaca en el rango (1.37, 2.17) es igualmente verosímil.
+
+
+Los resultados sugieren que el ritmo_cardiaco de las ranas se 
+incrementará 1.77 bpms por cada grado Celsius, si bien un aumento 
+de la frecuencia cardiaca en el rango (1.37, 2.17) es igualmente verosímil.
 
 ### Validación de los modelos
 Evidentemente cualquier interpretación está supeditada a que el modelo sea 
@@ -176,7 +209,7 @@ recordar las asunciones más importantes del modelo:
 
 ### Ejemplo: evaluación del modelo `naive_model`
 ```{r}
-plot(naive_model, ask = FALSE)
+plot(my_lm, ask = FALSE)
 
 # Comprobar la normalidad con qqplot puede ser difícil. Podemos apoyarnos en 
 # performance::check_normality 
@@ -184,10 +217,10 @@ library("performance")
 # check_normality corre shapiro.test, pero tal y como resalta la documentación
 # "this formal test almost always yields significant results for the distribution
 # of residuals and visual inspection (e.g. Q-Q plots) are preferable."
-is_norm = check_normality(naive_model)
+is_norm = check_normality(my_lm)
 
 # Para hacer la inspección visual
-plot(is_norm)
+#### plot(is_norm)
 plot(is_norm, type = "qq")
 plot(is_norm, type = "qq", detrend=TRUE)
 ```
