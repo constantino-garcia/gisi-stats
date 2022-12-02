@@ -1,3 +1,15 @@
+library("afex")
+library("car")
+library("emmeans")
+library("easystats") # carga performance y effectsize
+library("tidyverse")
+
+# options
+theme_set(theme_bw())  # cambia el tema de ggplot
+options(contrasts = c("contr.sum", "contr.poly"))
+
+
+
 #' Implementa la fórmula de variaciones n! / (n - m)! de forma que sea numéricamente
 #' estable
 variaciones <- function(n, m) {
@@ -63,3 +75,5 @@ get_contrasts_coding <- function(my_contrasts) {
   my_contrasts <- rbind("constant" = 1 / ncol(my_contrasts), my_contrasts)
   solve(my_contrasts)[, -1]
 }
+
+
