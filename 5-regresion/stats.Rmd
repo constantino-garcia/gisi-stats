@@ -231,8 +231,36 @@ en "height_earnings.csv" para indigar sobre esto (datos procedentes de una encue
 sobre trabajo, familia y bienestar).
 
 ```{r}
-# ??
+library("tidyverse")
+library("readr")
+heights_earnings <- read_csv("data/heights_earnings.csv")
+heights_earnings
+
+# La altura influye en la ganancia?
+ggplot(heights_earnings, aes(x = height, y = earn,
+                             col=sex)) + 
+  geom_jitter(alpha = 0.6) + 
+  geom_smooth()
+
+# Ganancias depende de altura?
+# ganancias = a + b * altura : H0: b = 0
+earn_model = lm(earn ~ height, heights_earnings)
+
+library("performance")
+is_norm = check_normality(earn_model)
+# Los residuos no parecen normales
+plot(is_norm, type = "qq")
+plot(earn_model)
+
+summary(earn_model)
 ```
+
+```{r}
+heights_earnings$log_earn = log(heights_earnings$earn)
+# ...
+# earn_model = lm(log_earn ~ log_height, heights_earnings)
+```
+
 
 ## Regresión múltiple
 Para lidiar con situaciones como la ilustrada en el gráfico de 
@@ -268,25 +296,35 @@ como predictores**. ¡Ojo! Los coeficientes asociados a datos categóricos **no 
 interpretarse como una pendiente**.
 
 ### Ejemplo: regresión múltiple con datos categóricos
-Construye un modelo de regresión lineal para predecir el peso de una persona a partir
+Construye un modelo de regresión lineal para predecir el 
+peso de una persona a partir
 de los datos contenidos en "antrop.csv". Interpreta los coeficientes de la regresión.
 
 ```{r}
 antrop = read.csv("data/antrop.csv")
+# predecir weight, a partir de height y male
 
 # Ojo con la columna male! ¿Por qué?
-## ??????
+antrop$male = as.factor(antrop$male)
+antrop$male = fct_recode(antrop$male, "Hombre" = "1", "Mujer" = "0")
 
-# antrop_model = lm(?????, data = antrop)
+
+antrop_model = lm(weight ~ height + male, data = antrop)
 
 # Descomenta las siguientes líneas tras completar las líneas anteriores
-# antrop_preds = bind_cols(antrop, fit = predict(antrop_model))
-# ggplot(antrop_preds, aes(x = height, col=male)) + 
-#   geom_point(aes(y = weight)) + 
-#   geom_line(aes(y = fit), lwd = 3)
+antrop_preds = bind_cols(antrop, fit = predict(antrop_model))
+ggplot(antrop_preds, aes(x = height, col=male)) +
+  geom_point(aes(y = weight)) +
+  geom_line(aes(y = fit), lwd = 3)
 
-# summary(antrop_model)
+summary(antrop_model)
 ```
+
+Como R usa maleHombre, esto significa que si male == Hombre entonces
+male = 1 en la ecuación. En otro caso, usa 0
+$$weight(hombres) = -29 + 0.47 * height + 1.23$$ 
+$$weight(mujeres) = -29 + 0.47 * height$$ 
+
 
 El modelo se puede escribir como
 $$weight = -29 + 0.47 * height + 1.23 * male$$ 
@@ -297,7 +335,7 @@ pesan 1.23 Kg más que las mujeres (hemos **ajustado por el efecto de la altura*
 Usa intervalos de confianza para interpretar los resultados de la regresión.
 
 ```{r}
-# ??
+confint(antrop_model)
 ```
 
 ### Ejercicio: Howell
@@ -323,6 +361,14 @@ de la regresión.
 
 ```{r}
 data(iris)
+
+# ggplot(iris, aes(x = Sepal.Length, col = Species)) +
+#   geom_density()
+
+ggplot(iris, aes(x = Species, y = Sepal.Length)) +
+  geom_boxplot()
+
+
 iris_model = lm(Sepal.Length ~ Species, iris)
 print(summary(iris_model))
 
@@ -371,26 +417,32 @@ estas variantes dan lugar a dos nuevas especies que llamas versicolor (V-I) y
 virginica (V-II). Te planteas dos preguntas científicas: 
 
 1. ¿Es el método V capaz de crear especies con el sépalo más grande?
+$$\mu_{s} - \frac{\mu_{vi} + \mu_{vii}}{2} \neq 0$$
+setosa: 1 
+versicolor = -0.5
+virgininca = -0.5
 2. ¿Existe alguna diferencia entre V-I y V-II?
+$$\mu_{vi} - \mu_{vii} \neq 0$$
+Contraste: es una pregunta acerca de varias medias.
+
 
 ```{r}
 source("utils.R")   # cargamos get_contrasts_coding
-# Cambiamos otra vez la especie referencia (no es necesario, pero para tener 
-# a las vs juntas)
+
 iris$Species = relevel(iris$Species, "setosa")
-levels(iris$Species)
+# matriz de codificaciones
+matriz_contrastes = rbind(
+  "_setosa-V" = c(1, -0.5, -0.5),
+  "_V1-V2" =    c(0,    1,   -1)
+)
+# 1 * 0 + (-0.5) * 1 + (-0.5) * (-1) = -0.5 + 0.5 = 0
+
+contrasts(iris$Species) = get_contrasts_coding(matriz_contrastes)
 contrasts(iris$Species)
 
-my_contrasts = rbind(
-  "V - setosa" = c(-1, 0.5, 0.5),
-  "I - II" = c(0, 1, -1)
-)
-my_coding = get_contrasts_coding(my_contrasts)
-contrasts(iris$Species) = my_coding
-contrasts(iris$Species)
 v_model = lm(Sepal.Length ~ Species, iris)
+
 summary(v_model)
-confint(v_model)
 ```
 
 El método V parace producir sépalos más grandes. Por otra parte, V-II es mejor
@@ -418,17 +470,51 @@ Añade la variable sexo al modelo de los salarios. ¿Cuál es la diferencia en g
 para hombres y mujeres de la misma altura? 
 
 ```{r}
-# ???
+heights_earnings = read_csv("data/heights_earnings.csv")
+heights_earnings$sex = as.factor(heights_earnings$sex)
+heights_earnings$ed = as.factor(heights_earnings$ed)
+
+ggplot(heights_earnings, aes(x = height, y = earn, 
+                             col = sex)) + 
+  geom_jitter(alpha = 0.4) +
+  geom_smooth()
+
+model = lm(log(earn) ~ log(height) + sex, heights_earnings)
+
+library("performance")
+is_norm = check_normality(model)
+plot(is_norm, type = "qq")
+
+summary(model)
 ```
 
 Añade la variable educación al modelo de los salarios. Modifica los contrastes
 para responder a las siguientes preguntas:
 
-1. ¿Merece la pena estudiar "high school" o "universidad" o basta con quedarse en
-"elementary" (en términos de salario)?
+1. ¿Merece la pena estudiar "high school" o "universidad" o basta con quedarse en "elementary" (en términos de salario)?
+
+$$\mu_{elementary} - \frac{\mu_{hs} + \mu_u}{2} \neq 0$$
+
 2. ¿Merece la pena estudiar "universidad" comparado con "high school"?
+$$\mu_{hs} - \mu_{u} \neq 0$$
 
 ```{r}
-# ??
+heights_earnings$ed = as.factor(heights_earnings$ed)
+contrasts(heights_earnings$ed)
+
+matriz_contrastes = rbind(
+  "elementary-higher" = c(1, -0.5, -0.5),
+  "hs-uni" = c(0, 1, -1)
+)
+contrasts(heights_earnings$ed) = get_contrasts_coding(matriz_contrastes)
+
+model = lm(log(earn) ~ log(height) + sex + ed, heights_earnings)
+summary(model)
+
+library("performance")
+is_norm = check_normality(model)
+plot(is_norm, type = "qq")
+
+summary(model)
 ```
 
