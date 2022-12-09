@@ -247,16 +247,50 @@ es preferible? Usa la función *var.test*.
 
 # reto: generar 16 muestras normales de media 3
 # y varianza 24.
-sim <- rnorm(16, mean = 3, sd = sqrt(24))
-sim_z <- (sim - mean(sim)) / sd(sim)
-sim_majas <- sim_z * sqrt(24) + 3 # proceso inv z
-
 
 # A: 16 muestras de var 24
+sim <- rnorm(16, mean = 3, sd = sqrt(24))
+sim_z <- (sim - mean(sim)) / sd(sim)
+A <- sim_z * sqrt(24) + 3 # proceso inv z
+
 # B: 10 muestras de var 18
+sim <- rnorm(10, mean = 0, sd = sqrt(18))
+sim_z <- (sim - mean(sim)) / sd(sim)
+B <- sim_z * sqrt(18) + 0
+var(B)
+
 # Para calcular var(a) / var(b)
-var.test(a, b)
+
+var.test(A, B, conf.level = 0.98)
+# var_pob_A / var_poblacion_B está en (0.2687046, 5.1930508)
+
+
+#### Resolución por fórmula:
+ratio = 24 / 18
+cuantiles = c(
+  qf(0.99, df1 = 16 - 1, df2 = 10 - 1),
+  qf(0.01, df1 = 16 - 1, df2 = 10 - 1)
+)
+ratio / cuantiles
 ```
+
+var_pob_a / var_pob_b está en (0.2687046, 5.1930508). Los datos no aportan
+evidencia de que las varianzas sean distintas.
+
+En este contexto, como A es más barato, la empresa debería elegir este método
+de fabricación.
+
+# Ejercicio extra
+¿Hay evidencia de que la $\sigma^2_a$ sea al menos dos veces mayor que la $\sigma^2_b$?
+
+Ho:
+Ha: $$\sigma^2_a > 2 \sigma^2_b$$ -> $$\sigma^2_a/\sigma^2_b > 2$$
+
+```{r}
+# sigma^2_a / sigma^2_b > 2
+var.test(A, B, alternative = "greater", ratio = 2)
+```
+
 
 --- 
 

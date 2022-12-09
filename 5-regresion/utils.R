@@ -6,7 +6,7 @@ library("tidyverse")
 
 # options
 theme_set(theme_bw())  # cambia el tema de ggplot
-options(contrasts = c("contr.sum", "contr.poly"))
+# options(contrasts = c("contr.sum", "contr.poly"))
 
 
 

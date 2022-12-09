@@ -1,5 +1,5 @@
 ---
-title: "Intervalos de confianza y test de hipótesis para dos poblaciones normales"
+title: "ICs y tests para poblaciones no-normales"
 output: html_document
 ---
 
@@ -17,8 +17,40 @@ es importante saber el número de goles promedio por equipo en cada partido. Usa
 los resultados de la liga 21-22, construye un intervalo de confianza
 del 98\% para el promedio de goles del equipo local en un partido.
 
+X: número de goles en un partido por equipo
+X ~ P(lambda)
+donde lambda es número medio de goles en un partido por equipo
+
+lambda = E[X] ---> mean()
+
+Teorema central del límite: X1, X2, ..., Xn todos independientes
+X1 + X2 + ... + Xn es aproximadamente Normal(?, ?)
+E[X1 + X2 + ... + Xn] = E[X1] + ... E[Xn] = n * lambda
+Var[X1 + X2 + ... + Xn] = (son independientes) = Var[X1] + ... + Var[Xn] = n*lambda
+
+X1 + X2 + ... + Xn ~ Normal(n* lambda, varianza = n * lambda)
+(X1 + X2 + ... + Xn) / n ~ Normal(lambda, varianza = lambda / n)
+
 ```{r}
-# ??
+library(readr)
+spain_league <- read_csv("data_4/spain_league.csv")
+spain_2021 <- spain_league[spain_league$Season == 2021, ]
+# Por qué no usar también vgoal? PAra evitar dependencias
+goles_local <- spain_2021$hgoal
+
+lambda_est <- mean(goles_local)
+lambda_est
+
+zs = c(
+  qnorm(0.01),
+  qnorm(0.99)
+)
+
+lambda_est + zs * sqrt(lambda_est / length(goles_local))
+
+
+# Calcular usando table la distribucion de goles
+# usando dpois, que Poisson es una buena aproximacion
 ```
 
 
@@ -31,9 +63,21 @@ posibles jurados solo 4 fuesen afroamericanos (de una población con un 50\% de
 afroamericanos). Datos en "juries.csv". Las autoridades se defendían diciendo
 que era pura casualidad. ¿Es esto creíble? Apoya tus conclusiones con gráficos.
 
+X: nº de afroamericanos en la preselección del jurado
+X ~ B(80, p)
+
+H0: p = 0.5 
+Ha: p < 0.5
+
 ```{r}
-# ??
+prop.test(4, 80, alternative = "less", p = 0.5)
 ```
+
+El P-valor es casi 0, de donde los datos apoyan abrumadoramente
+que la probabilidad de selección de un afroamericano es < 0.5
+(******* racistas). Usando un IC al 95%, la probabilidad de 
+selección de un afroamericano es menor a 11%.
+
 
 
 ### A/B testing
@@ -45,7 +89,26 @@ midiendo el número de conversiones. Datos en "ab_testing.csv". ¿Se puede
 concluir que la nueva página incrementa el número de conversiones? 
 Apoya tus conclusiones con un gráfico.
 
-```{r}
-# ??
-```
+N: nº de clicks página nueva
+V: nº de clicks página vieja
 
+N ~ B(n_nueva, p_nueva)
+V ~ B(n_vieja, p_vieja)
+
+Ha: p_nueva > p_vieja
+    
+
+
+```{r}
+ab_testing <- read_csv("data_4/ab_testing.csv")
+
+counts <- table(ab_testing)
+rowSums(counts)
+
+prop.test(c(287, 192), c(1109, 1012), alternative = "greater")
+```
+Dado que p-valor es muy pequeño, existe una gran evidencia 
+de que la probabilidad en nueva es mayor que vieja.
+La probabilidad de conversión en la página nueva es al menos
+un 3% superior a la página vieja (95%). Debemos cambiar el 
+diseño.

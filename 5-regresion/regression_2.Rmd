@@ -16,7 +16,7 @@ la línea)...
 
 ```{r}
 # install.packages(
-#  c("afex", "emmeans")
+#  c("afex", "emmeans", "car")
 # )
 ```
 
@@ -68,7 +68,6 @@ nuevos pasos.
 
 ```{r, message=FALSE}
 library("car")  # Anova
-options(contrasts = c("contr.sum", "contr.poly"))   # ver utils.R
 
 data("iris")
 
@@ -91,6 +90,18 @@ v_model = lm(Sepal.Length ~ Species, iris)
 
 # 3) Correr ANOVA: test omnibus
 v_model_aov = Anova(v_model, type = 3)
+
+
+
+```
+
+
+```{r}
+summary(v_model)
+# Sepalo ~ Species (¿Son las especies distintas?)
+# El p-valor es muy pequeño, esto indica que hay diferencias
+# en el sepalo medio de las especies (omnibus)
+v_model_aov
 ```
 
 En el caso de modelos ANOVA, existen varios tamaños de efecto. Entre los mas conocidos
@@ -143,6 +154,7 @@ Entre los métodos de ajuste, podemos distinguir entre
   
 Podemos emplear `R` base para realizar los tests post-hoc....
 
+
 ```{r}
 # Bonferroni es bastante conservador, pero es un ajuste muy conocido
 pairwise.t.test(iris$Sepal.Length, iris$Species, p.adjust.method = "bonferroni")
@@ -166,6 +178,14 @@ pairs(v_model_emms, adjust="fdr", infer = c(TRUE, TRUE))
 eff_size(v_model_emms, sigma = sigma(v_model), edf = 147)
 ```
 
+
+
+```{r}
+iris
+```
+
+
+
 ### Ejemplo: Contrastes con emmeans
 Una desventaja de `contrasts` es tener que usar la función `get_constrasts_coding`.
 Además, cuando los análisis de ANOVA se compliquen las cosas se pondrán realmente feas. 
@@ -174,10 +194,70 @@ a partir de ahora  calcularemos dichos contrastes con `emmeans`):
 
 ```{r}
 v_model_means = emmeans(v_model, "Species") 
-contrast(v_model_means, method = list('V-Setosa' = c(-1, 0.5, 0.5), 'I - II' = c(0, 1, -1)), 
+contrast(v_model_means, 
+         method = list(
+           'V-Setosa' = c(-1, 0.5, 0.5), 
+           'I - II' = c(0, 1, -1)), 
          infer = c(TRUE, TRUE)) 
 ```
 
+
+```{r}
+# 1) Visualizar 
+# iris$Sepal.Length, iris$Species
+ggplot(iris, aes(x = Sepal.Length, y = Species, 
+                 fill = Species)) + 
+  geom_boxplot()
+
+# 2) Si hay contrastes, especificarlos
+# Hay diferencias entre la especie setosa y las especies V?
+contrasts(iris$Species)
+# mu_setosa - (0.5 * mu_versicolor  + 0.5 * mu_virginica) = 0
+c(1, -0.5, -0.5)
+# Hay diferencias entre virginica y versicolor?
+# mu_versicolor - mu_virginica = 0
+c(0, 1, -1)
+
+my_contrasts = rbind(
+    "setosa - V" = c(1, -0.5, -0.5),
+    "Vers - Virg" = c(0, 1, -1)
+)
+
+contrasts(iris$Species) = get_contrasts_coding(my_contrasts)
+
+# 3) Regresion y ANOVA (ANalisis Of VAriance)
+model_v = lm(Sepal.Length ~ Species, iris)
+model_v_aov = Anova(model_v, type = 3)
+
+# 4) Contrastes y test-posthoc (si necesarios)
+summary(model_v)
+
+# Si queremos todas las comparaciones
+model_v_aov
+# Como p-valor < 2.2e-16, el test ANOVA nos indica que 
+# existe alguna diferencia entre los sepalos de las especies
+
+# Tests posthoc
+pairwise.t.test(iris$Sepal.Length, iris$Species, 
+                p.adjust.method = "bonferroni")
+
+# En este caso, los sepalos de las especies son todas 
+# distintas entre si.
+
+# 5) Comprobar asunciones:
+# 5.1) Regresión
+
+source("utils.R")
+is_norm = check_normality(model_v)
+plot(is_norm, type = "qq")
+
+
+# 5.2) Homogeneidad de la varianza
+check_homogeneity(model_v)
+# Los tests posthoc no cumplen las asunciones, debemos 
+# ser cautelosos porque los p-valores pueden ser realmente
+# más grandes.
+```
 
 
 ### Ejemplo: asunciones de ANOVA
@@ -205,16 +285,37 @@ que practican ejercicios físicos en diferentes niveles
 específica, hagamos un análisis de los datos...
 
 ```{r}
+source("utils.R")
 # 1) Vis...
+anxiety <- read_csv("data/anxiety.csv")
+anxiety
+
+ggplot(anxiety, aes(y = posttest - pretest, x = group)) + 
+  geom_boxplot()
+
+ggplot(anxiety, aes(y = posttest, x = pretest, col=group)) +
+       geom_point() + 
+       geom_smooth()
 
 # 2) Contrates 
 # No tenemos hipótesis :(
 
 # 3) Anova + asunciones
-# anxiety_lm = ... 
+# anxiety_lm = lm(posttest - pretest ~ group, anxiety)
+anxiety_lm = lm(posttest ~ pretest + group, anxiety)
+anxiety_aov = Anova(anxiety_lm, type = 3)
+anxiety_aov
 
+#summary(anxiety_lm)
+# posttest = -2.14 + 1.02 * pretest + 1.20 * group1 
+           #  + 0.57* group2
+# posttest(grupo_3) = -2.14 + 1.02 * pretest 
 # 4) Posthoc tests!
 # ...
+# pairwise.t.test(anxiety$posttest, anxiety$group,
+#                 p.adjust.method = "bonferroni")
+group_means = emmeans(anxiety_lm, "group")
+pairs(group_means, adjust = "tukey")
 ```
 
 ¡Ojo, queremos comparar diferencias entre las medias ajustadas! La función
@@ -224,10 +325,11 @@ pairwise.t.test() no usará medias ajustadas, por lo que debemos emplear
 ```{r}
 # Descomenta tras completar el ejercicio anterior
 # pairs(
-#   emmeans(anxiety_lm, "group", adjust = "Tukey"),
+#   emmeans(anxiety_lm, "group"),
+#   adjust = "Tukey",
 #   infer = c(TRUE, TRUE)
 # )
-# 
+
 # # Versus... (¡no usar esto! Es solo por comparación)
 # pairwise.t.test(anxiety$posttest, anxiety$group, p.adjust.method = "bonferroni")
 # ggplot(anxiety, aes(x=group, y=posttest, fill=group)) + geom_boxplot()
@@ -262,9 +364,16 @@ drugs_df_1 = read.csv("data/drugs_1.csv")
 drugs_df_1$drug = factor(drugs_df_1$drug)
 drugs_df_1$sex = factor(drugs_df_1$sex)
 
-ggplot(drugs_df_1, aes(x=sex, y=response_time, col=drug)) + 
-  stat_summary() + 
-  stat_summary(geom='line', aes(group=drug))
+ggplot(drugs_df_1, aes(x = drug, col = sex, y = response_time)) +
+  stat_summary() +
+  stat_summary(geom="line", aes(group = sex))
+
+ggplot(drugs_df_1, aes(x = sex, col = drug, y = response_time)) +
+  stat_summary() +
+  stat_summary(geom="line", aes(group = drug))
+
+# La gráfica sugiere que no hay interacciones porque
+    # las líneas son bastante paralelas
 ```
 
 ```{r}
@@ -305,17 +414,35 @@ capturar **las interacciones** presentes en los datos.
 ### Ejemplo: modelado de interacciones 
 Para modelar interacciones...
 
-```{r}
-drugs_model_2 = lm(response_time ~ sex * drug, data = drugs_df_2) 
-# o de forma equivalente
-#drugs_model_2 = lm(response_time ~ sex + drug + sex:drug, data = drugs_df_2)
-drugs_df_2$predictions = predict(drugs_model_2)
+response_time = 23 + 15 * male + 11*B -9*Placebo -20* Male:B -19 *Male:Placebo
+Hombre-A:
+    * 23 + 15 
+Hombre-B:
+    * 23 + [15 + (11 - 20)]
+Hombre-Placebo:
+    * 23 + [15 (- 9  - 19)]
 
-ggplot(drugs_df_2, aes(x=sex, y=predictions, col=drug)) + 
+```{r}
+model_drugs2 = lm(response_time ~ sex + drug + sex:drug,
+                  drugs_df_2)
+model_drugs2 = lm(response_time ~ sex * drug,
+                  drugs_df_2)
+summary(model_drugs2)
+
+drugs_df_2$preds = predict(model_drugs2)
+
+ggplot(drugs_df_2, aes(x = sex, y = response_time, col=drug)) +
   stat_summary() + 
-  stat_summary(geom='line', aes(group=drug))
+  stat_summary(geom="line", aes(group = drug))
+
+ggplot(drugs_df_2, aes(x = sex, y = preds, col=drug)) +
+  stat_summary() + 
+  stat_summary(geom="line", aes(group = drug))
 ```
 
+NO INTERPRETES LOS EFECTOS PRINCIPALES SI LA INTERACCIÓN ES SIGNIFICATIVA.
+
+# STOP (¡Hasta aquí!)
 
 ### Ejemplo: completando el análisis para drugs_model_2
 Una vez aclarado el concepto de interacción podemos completar el análisis 
@@ -327,7 +454,7 @@ para `drugs_df_2`.
 # ¡Ojo! ahora creamos listas de contrastes
 
 drugs_contrasts = list(
-  "_Drugs-Placebo" = c(1, 1, -2), 
+  "_Drugs-Placebo" = c(0.5, 0.5, -1), 
   "_A - B" = c(1, -1, 0)
 )
 
@@ -344,7 +471,11 @@ drug_means = emmeans(drugs_model_2, ~ drug)
 contrast(drug_means, method = list("drugs" = drugs_contrasts))
 # Contrastes para interacciones 
 conditional_means = emmeans(drugs_model_2, ~ drug | sex)
-contrast(conditional_means, interaction = list("drugs" = drugs_contrasts, "sex" = "consec"), by=NULL)
+
+
+contrast(conditional_means, 
+         interaction = 
+           list("drugs" = drugs_contrasts, "sex" = "consec"), by=NULL)
 ```
 
 Lo más interesante del código anterior es reflexionar sobre cada uno de los 
